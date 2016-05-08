@@ -31,6 +31,10 @@ document.addEventListener("mousedown", function(event) {
         });
     }
     request.send();
+    var src = audiocontext.createBufferSource();
+    src.buffer = audiobuffer;
+    src.connect(audiocontext.destination);
+    src.start(0);
 });
 
 document.addEventListener("mousemove", function(event) {
