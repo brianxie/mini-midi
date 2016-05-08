@@ -1,22 +1,29 @@
 var audiocontext = new AudioContext();
-var keyboard = "awsedftgyhujk" // lowercase input string
-var freqs = {}
-var keynums = {}
-var active = {}
-var oscillators = {}
+var keyboard = "awsedftgyhujk"; // lowercase input string
+var freqs = {};
+var keynums = {};
+var active = {};
+var oscillators = {};
+var osctype = "sine";
+var modes = {};
 
 var height = window.innerHeight;
-var ypos = 0;
+var ypos = 1;
 var railsbackBase = Math.pow(2.0, 1.0/12.0); // base of function given by railsback curve
-var a440 = 440.0
+var a440 = 440.0;
 
 for (i = 0; i < keyboard.length; i++) { // equal temperament
     key = keyboard[i];
     keynums[key] = i;
     freq = 440.0 * Math.pow(railsbackBase, i + 40 - 49); // start from middle C
-    freqs[key] = freq
+    freqs[key] = freq;
     active[key] = false;
 }
+
+modes["1"] = "sine";
+modes["2"] = "square";
+modes["3"] = "sawtooth";
+modes["4"] = "triangle";
 
 var url = "./ce1.ogg";
 var audiobuffer = null;
@@ -45,7 +52,11 @@ document.addEventListener("mousemove", function(event) {
 document.addEventListener("keydown", function(event) {
     var charPressed = String.fromCharCode(event.keyCode || event.which).toLowerCase(); // get lowercase string
     // console.log(charPressed);
-    if (!(charPressed in freqs)) {
+    if (charPressed in modes) {
+        // osctype = modes[charPressed];
+        msgMidi(modeToMidi(charPressed, 0));
+        return;
+    } else if (!(charPressed in freqs)) {
         console.log("unmapped keydown: " + charPressed);
         return;
     } else if (active[charPressed] == true) {
@@ -60,7 +71,10 @@ document.addEventListener("keydown", function(event) {
 document.addEventListener("keyup", function(event) {
     var charPressed = String.fromCharCode(event.keyCode || event.which).toLowerCase(); // get lowercase string
     // console.log(charPressed);
-    if (!(charPressed in freqs)) {
+    if (charPressed in modes) {
+        // don't need to do anything actually
+        return;
+    } else if (!(charPressed in freqs)) {
         console.log("unmapped keyup: " + charPressed);
         return;
     } else if (active[charPressed] == false) {
@@ -76,8 +90,9 @@ function startTone(key, vol) {
     var oscillator = audiocontext.createOscillator();
     var gain = audiocontext.createGain();
     gain.gain.value = vol;
+    oscillator.type = osctype;
     oscillator.frequency.value = freqs[key];
-    oscillator.connect(gain)
+    oscillator.connect(gain);
     gain.connect(audiocontext.destination);
     oscillators[key] = oscillator;
     oscillator.start(0);
@@ -103,6 +118,12 @@ function keyupToMidi(key, vol, channel) {
     var data1 = 0b0 + keynums[key] + 60; // 60 defined as middle C
     var data2 = 0; // not using velocity for keyup
     return (status << 16) + (data1 << 8) + data2;
+}
+
+function modeToMidi(key, channel) {
+    var status = (0b1100 << 4) + channel; // program change
+    var data1 = 0b0 + parseInt(key);
+    return (status << 8) + data1;
 }
 
 function msgMidi(msg) {
@@ -142,6 +163,9 @@ function msgMidi(msg) {
         var vol = data2;
         // console.log(keychar);
         stopTone(keychar, vol / 127.0);
+    } else if ((status >> 4) == 0b1100) {
+        var preset = data1.toString();
+        osctype = modes[preset];
     } else {
         console.log("undefined midi message");
         return;
