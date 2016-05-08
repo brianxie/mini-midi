@@ -28,6 +28,7 @@ document.addEventListener("mousedown", function(event) {
     request.onload = function() {
         audiocontext.decodeAudioData(request.response, function(buffer) {
             audiobuffer = buffer;
+            console.log(audiobuffer);
         });
     }
     request.send();
