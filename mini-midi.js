@@ -25,6 +25,15 @@ modes["2"] = "square";
 modes["3"] = "sawtooth";
 modes["4"] = "triangle";
 
+console.log("mini-midi has launched");
+console.log("valid keys: " + keyboard);
+console.log("available modes:");
+for (var key in modes) {
+    console.log("[" + key + "] " + modes[key]);
+}
+
+
+// extras
 var url = "./ce1.ogg";
 var audiobuffer = null;
 var request = new XMLHttpRequest();
@@ -43,6 +52,8 @@ document.addEventListener("mousedown", function(event) {
     src.connect(audiocontext.destination);
     src.start(0);
 });
+// end extras
+
 
 document.addEventListener("mousemove", function(event) {
     ypos = 1 - (event.clientY / height);
@@ -53,7 +64,7 @@ document.addEventListener("keydown", function(event) {
     var charPressed = String.fromCharCode(event.keyCode || event.which).toLowerCase(); // get lowercase string
     // console.log(charPressed);
     if (charPressed in modes) {
-        // osctype = modes[charPressed];
+        // setOscType(modes[charPressed]);
         msgMidi(modeToMidi(charPressed, 0));
         return;
     } else if (!(charPressed in freqs)) {
@@ -104,6 +115,16 @@ function stopTone(key, vol) {
     oscillator = oscillators[key];
     oscillator.stop(0);
     active[key] = false;
+}
+
+function setOscType(mode) {
+    var prev = osctype;
+    if (prev == mode) {
+        console.log("mode is already set to [" + mode + "]");
+    } else {
+        osctype = mode;
+        console.log("mode changed from [" + prev + "] to [" + mode + "]");
+    }
 }
 
 function keydownToMidi(key, vol, channel) {
@@ -165,7 +186,7 @@ function msgMidi(msg) {
         stopTone(keychar, vol / 127.0);
     } else if ((status >> 4) == 0b1100) {
         var preset = data1.toString();
-        osctype = modes[preset];
+        setOscType(modes[preset]);
     } else {
         console.log("undefined midi message");
         return;
