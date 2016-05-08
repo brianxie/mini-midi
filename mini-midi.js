@@ -30,7 +30,7 @@ document.addEventListener("mousedown", function(event) {
             audiobuffer = buffer;
         });
     }
-    // request.send();
+    request.send();
 });
 
 document.addEventListener("mousemove", function(event) {
