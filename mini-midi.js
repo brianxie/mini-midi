@@ -1,29 +1,69 @@
 var audiocontext = new AudioContext();
-var keyboard = "awsedftgyhujk"; // lowercase input string
+
 var freqs = {};
 var keynums = {};
 var active = {};
 var oscillators = {};
-var osctype = "sine";
+var gains = {}
 var modes = {};
 
-var height = window.innerHeight;
-var ypos = 1;
-var railsbackBase = Math.pow(2.0, 1.0/12.0); // base of function given by railsback curve
-var a440 = 440.0;
-
-for (i = 0; i < keyboard.length; i++) { // equal temperament
-    key = keyboard[i];
-    keynums[key] = i;
-    freq = 440.0 * Math.pow(railsbackBase, i + 40 - 49); // start from middle C
-    freqs[key] = freq;
-    active[key] = false;
-}
-
+var keyboard = "awsedftgyhujk"; // lowercase input string
+var osctype = "sine";
 modes["1"] = "sine";
 modes["2"] = "square";
 modes["3"] = "sawtooth";
 modes["4"] = "triangle";
+
+var railsbackbase = Math.pow(2.0, 1.0 / 12.0); // base of function given by railsback curve
+var a440 = 440.0;
+
+var height = window.innerHeight;
+var ypos = 1;
+
+for (var i = 0; i < keyboard.length; i++) { // equal temperament
+    key = keyboard[i];
+    keynums[key] = i;
+    freq = 440.0 * Math.pow(railsbackbase, i + 40 - 49); // start from middle C
+    freqs[key] = freq;
+    active[key] = false;
+}
+
+var canvas = document.getElementById("visualization");
+var canvascontext = canvas.getContext("2d");
+canvascontext.clearRect(0, 0, canvas.width, canvas.height);
+
+var analyser = audiocontext.createAnalyser();
+analyser.fftSize = 2048;
+analyser.connect(audiocontext.destination);
+var bufferlength = analyser.frequencyBinCount;
+var dataarray = new Uint8Array(bufferlength);
+analyser.getByteTimeDomainData(dataarray);
+
+function draw() {
+    var visual = requestAnimationFrame(draw);
+    analyser.getByteTimeDomainData(dataarray);
+    canvascontext.fillStyle = "rgb(15, 15, 15)";
+    canvascontext.fillRect(0, 0, canvas.width, canvas.height);
+    canvascontext.lineWidth = 2;
+    canvascontext.strokeStyle = "rgb(255, 255, 255)";
+    canvascontext.beginPath();
+    var slicewidth = canvas.width * 1.0 / bufferlength;
+    var x = 0;
+    for (var i = 0; i < bufferlength; i++) {
+        var v = dataarray[i] / 128.0;
+        var y = v * canvas.height / 2;
+        if (i == 0) {
+            canvascontext.moveTo(x, y);
+        } else {
+            canvascontext.lineTo(x, y);
+        }
+        x += slicewidth;
+    }
+    canvascontext.lineTo(canvas.width, canvas.height/2);
+    canvascontext.stroke();
+}
+// requestAnimationFrame(draw);
+draw();
 
 console.log("mini-midi has launched");
 console.log("valid keys: " + keyboard);
@@ -31,29 +71,6 @@ console.log("available modes:");
 for (var key in modes) {
     console.log("[" + key + "] " + modes[key]);
 }
-
-
-// extras
-var url = "./ce1.ogg";
-var audiobuffer = null;
-var request = new XMLHttpRequest();
-request.open('GET', url, true);
-request.responseType = "arraybuffer";
-request.onload = function() {
-    audiocontext.decodeAudioData(request.response, function(buffer) {
-        audiobuffer = buffer;
-    });
-}
-request.send();
-
-document.addEventListener("mousedown", function(event) {
-    var src = audiocontext.createBufferSource();
-    src.buffer = audiobuffer;
-    src.connect(audiocontext.destination);
-    src.start(0);
-});
-// end extras
-
 
 document.addEventListener("mousemove", function(event) {
     ypos = 1 - (event.clientY / height);
@@ -68,15 +85,16 @@ document.addEventListener("keydown", function(event) {
         msgMidi(modeToMidi(charPressed, 0));
         return;
     } else if (!(charPressed in freqs)) {
-        console.log("unmapped keydown: " + charPressed);
+        // console.log("unmapped keydown: " + charPressed);
         return;
     } else if (active[charPressed] == true) {
         // console.log("key already active: " + charPressed);
         return;
-    }
+    } else {
     // playTone(audiocontext, freqs[charPressed], 1, 1);
     // startTone(charPressed, ypos);
-    msgMidi(keydownToMidi(charPressed, ypos, 0));
+        msgMidi(keydownToMidi(charPressed, ypos, 0));
+    }
 });
 
 document.addEventListener("keyup", function(event) {
@@ -86,26 +104,29 @@ document.addEventListener("keyup", function(event) {
         // don't need to do anything actually
         return;
     } else if (!(charPressed in freqs)) {
-        console.log("unmapped keyup: " + charPressed);
+        // console.log("unmapped keyup: " + charPressed);
         return;
     } else if (active[charPressed] == false) {
         // console.log("key already inactive: " + charPressed);
         return;
+    } else {
+        // stopTone(charPressed, ypos);
+        msgMidi(keyupToMidi(charPressed, ypos, 0));
     }
-    // stopTone(charPressed, ypos);
-    msgMidi(keyupToMidi(charPressed, ypos, 0));
 });
 
 function startTone(key, vol) {
     console.log("key " + key + " down: " + freqs[key] + " hz / " + vol + " loudness");
     var oscillator = audiocontext.createOscillator();
     var gain = audiocontext.createGain();
-    gain.gain.value = vol;
     oscillator.type = osctype;
     oscillator.frequency.value = freqs[key];
+    gain.gain.value = vol;
     oscillator.connect(gain);
-    gain.connect(audiocontext.destination);
+    gain.connect(analyser);
+    // gain.connect(audiocontext.destination);
     oscillators[key] = oscillator;
+    gains[key] = gain;
     oscillator.start(0);
     active[key] = true;
 }
@@ -113,7 +134,10 @@ function startTone(key, vol) {
 function stopTone(key, vol) {
     console.log("key " + key + " up: " + freqs[key] + " hz");
     oscillator = oscillators[key];
+    gain = gains[key];
     oscillator.stop(0);
+    oscillator.disconnect();
+    gain.disconnect();
     active[key] = false;
 }
 
@@ -197,12 +221,32 @@ function msgMidi(msg) {
 
 
 
+// extras
+// var url = "./ce1.ogg";
+// var audiobuffer = null;
+// var request = new XMLHttpRequest();
+// request.open('GET', url, true);
+// request.responseType = "arraybuffer";
+// request.onload = function() {
+//     audiocontext.decodeAudioData(request.response, function(buffer) {
+//         audiobuffer = buffer;
+//     });
+// }
+// request.send();
 
-function playTone(context, freq, vol, dur) {
-    var oscillator = context.createOscillator();
+// document.addEventListener("mousedown", function(event) {
+//     var src = audiocontext.createBufferSource();
+//     src.buffer = audiobuffer;
+//     src.connect(audiocontext.destination);
+//     src.start(0);
+// });
 
-    oscillator.connect(context.destination);
-    oscillator.frequency.value = freq;
-    oscillator.start(0);
-    oscillator.stop(context.currentTime + dur);
-}
+// function playTone(context, freq, vol, dur) {
+//     var oscillator = context.createOscillator();
+
+//     oscillator.connect(context.destination);
+//     oscillator.frequency.value = freq;
+//     oscillator.start(0);
+//     oscillator.stop(context.currentTime + dur);
+// }
+// end extras
