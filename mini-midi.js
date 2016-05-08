@@ -18,25 +18,23 @@ for (i = 0; i < keyboard.length; i++) { // equal temperament
     active[key] = false;
 }
 
+var url = "./ce1.ogg";
+var audiobuffer = null;
+var request = new XMLHttpRequest();
+request.open('GET', url, true);
+request.responseType = "arraybuffer";
+request.onload = function() {
+    audiocontext.decodeAudioData(request.response, function(buffer) {
+        audiobuffer = buffer;
+    });
+}
+request.send();
+
 document.addEventListener("mousedown", function(event) {
-    console.log(event);
-    var url = "./ce1.ogg";
-    var audiobuffer = null;
-    var request = new XMLHttpRequest();
-    request.open('GET', url, true);
-    request.responseType = "arraybuffer";
-    request.onload = function() {
-        audiocontext.decodeAudioData(request.response, function(buffer) {
-            audiobuffer = buffer;
-        });
-    }
-    request.send();
     var src = audiocontext.createBufferSource();
-    console.log(audiobuffer);
     src.buffer = audiobuffer;
-    // console.log(src);
-    // src.connect(audiocontext.destination);
-    // src.start(0);
+    src.connect(audiocontext.destination);
+    src.start(0);
 });
 
 document.addEventListener("mousemove", function(event) {
