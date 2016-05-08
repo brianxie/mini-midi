@@ -34,8 +34,8 @@ document.addEventListener("mousedown", function(event) {
     var src = audiocontext.createBufferSource();
     src.buffer = audiobuffer;
     console.log(src);
-    src.connect(audiocontext.destination);
-    src.start(0);
+    // src.connect(audiocontext.destination);
+    // src.start(0);
 });
 
 document.addEventListener("mousemove", function(event) {
