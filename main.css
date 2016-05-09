@@ -38,6 +38,7 @@ body {
     font-size: 1.5em;
     /*font-weight: bold;*/
     line-height: 2;
+    /*text-decoration: underline;*/
 }
 
 .block {
@@ -68,4 +69,50 @@ body {
     height: 240px;
     overflow: scroll;
     float: right;
+}
+
+
+.blockbutton {
+    margin-left: 25%;
+    margin-right: 25%;
+    font-size: 1.5em;
+    position: relative;
+    color: #ffffff;
+    background-color: #3f3f3f;
+    text-align: center;
+    text-decoration: none;
+}
+
+.blockbutton a {
+    position: absolute;
+    text-align: center;
+    text-decoration: none;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.blockbutton a:link{
+    color: #ffffff;
+    background-color: #3f3f3f;
+    text-decoration: none;
+}
+
+.blockbutton a:visited{
+    color: #ffffff;
+    background-color: #3f3f3f;
+    text-decoration: none;
+}
+
+.blockbutton a:hover{
+    color: #ffffff;
+    background-color: #7f7f7f;
+    text-decoration: none;
+}
+
+.blockbutton a:active{
+    color: #ffffff;
+    background-color: #7f7f7f;
+    text-decoration: none;
 }
