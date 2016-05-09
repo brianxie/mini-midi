@@ -2,6 +2,9 @@
 
 
 // DEFINING GLOBAL VARS
+leftconsole = document.getElementById("console-midi");
+rightconsole = document.getElementById("console-js");
+
 var freqs = {};
 var keynums = {};
 var active = {};
@@ -90,6 +93,24 @@ for (var key in modes) {
 console.log("WARNING: ks-modes prone to high latency (due to live synth) as well as some unfixed bugs");
 
 
+leftconsole.innerHTML += "mini-midi has launched" + "<br>";
+// leftconsole.innerHTML += "licensed under the MIT license" + "<br>";
+leftconsole.innerHTML += "uses webaudio oscillators," + "<br>";
+leftconsole.innerHTML += "karplus-strong string synthesis" + "<br>";
+leftconsole.innerHTML += "to generate samples" + "<br>";
+leftconsole.innerHTML += "<br>";
+leftconsole.innerHTML += "valid keys: " + keyboard + "<br>";
+leftconsole.innerHTML += "volume controlled by mouse y-pos" + "<br>";
+rightconsole.innerHTML += "available modes:" + "<br>";
+for (var key in modes) {
+    rightconsole.innerHTML += "[" + key + "] " + modes[key] + "<br>";
+}
+leftconsole.innerHTML += "--------------------------------" + "<br>";
+rightconsole.innerHTML += "--------------------------------" + "<br>";
+leftconsole.scrollTop = leftconsole.scrollHeight;
+rightconsole.scrollTop = rightconsole.scrollHeight;
+
+
 
 // HANDLE USER INPUT
 document.addEventListener("mousemove", function(event) {
@@ -152,9 +173,17 @@ function setMode(mode) {
     var prev = currmode;
     if (prev == mode) {
         console.log("mode is already set to [" + mode + "]");
+
+        rightconsole.innerHTML += "[" + mode + "] already set" + "<br>";
+        rightconsole.scrollTop = rightconsole.scrollHeight;
+
     } else {
         currmode = mode;
         console.log("mode changed from [" + prev + "] to [" + mode + "]");
+
+        rightconsole.innerHTML += "[" + prev + "] to [" + mode + "]" + "<br>";
+        rightconsole.scrollTop = rightconsole.scrollHeight;
+
     }
 }
 
@@ -164,6 +193,10 @@ function startTone(key, vol) {
         return;
     }
     console.log("key " + key + " down: " + freqs[key] + " hz / " + vol + " loudness");
+
+    rightconsole.innerHTML += "[strike] " + Math.round(freqs[key]) + " hz / " + Math.round(100*vol) + "% loudness" + "<br>";
+    rightconsole.scrollTop = rightconsole.scrollHeight;
+
     var oscillator = audiocontext.createOscillator();
     var gain = audiocontext.createGain();
     oscillator.type = currmode.slice(4);
@@ -185,6 +218,10 @@ function stopTone(key, vol) {
     // }
     // we actually don't want that block so we can release in a different mode
     console.log("key " + key + " up: " + freqs[key] + " hz");
+
+    rightconsole.innerHTML += "[release] " + Math.round(freqs[key]) + " hz" + "<br>";
+    rightconsole.scrollTop = rightconsole.scrollHeight;
+
     oscillator = oscillators[key];
     gain = gains[key];
     oscillator.stop(0);
@@ -218,6 +255,10 @@ function ksSynth(key, vol) {
     var ringbuf = [];
 
     console.log("key " + key + " down: " + freq + " hz / " + vol + " loudness");
+
+    rightconsole.innerHTML += "[strike] " + Math.round(freq) + " hz / " + Math.round(100*vol) + "% loudness" + "<br>";
+    rightconsole.scrollTop = rightconsole.scrollHeight;
+
 
     var sp = audiocontext.createScriptProcessor(4096, 1, 1);
     sp.connect(analyser);
@@ -301,6 +342,10 @@ function modeToMidi(key, channel) { // 2byte
 // MIDI MESSAGE INTERPRETERS
 function msgMidi(msg) {
     console.log("MIDI MESSAGE: 0b" + msg.toString(2));
+
+    leftconsole.innerHTML += msg.toString(2) + "<br>";
+    leftconsole.scrollTop = leftconsole.scrollHeight;
+
     var statusoffset = 0;
     var dataoffset = 0
     var data2 = 0;

@@ -1,0 +1,36 @@
+body {
+    margin-left: 12.5%;
+    margin-right: 12.5%;
+    color: #3f3f3f;
+    background-color: #ffffff;
+    font-family: 'Lato', sans-serif;
+    font-size: 1.25em;
+    line-height: 1.5;
+}
+
+#title {
+    text-align: center;
+    font-size: 3em;
+    line-height: 1.25;
+}
+
+#wrapper {
+    width: 640px;
+    height: 720px;
+    margin: 0 auto;
+    font-family: "Roboto Mono";
+    font-size: 12px;
+}
+.scrollbox-midi {
+    width: 320px;
+    height: 240px;
+    overflow: scroll;
+    float: left;
+}
+
+.scrollbox-js {
+    width: 320px;
+    height: 240px;
+    overflow: scroll;
+    float: right;
+}
