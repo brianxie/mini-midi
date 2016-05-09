@@ -1,5 +1,6 @@
-var audiocontext = new AudioContext();
+// this looks really inelegant because midi contains an internal state machine :V
 
+// DEFINING GLOBAL VARS
 var freqs = {};
 var keynums = {};
 var active = {};
@@ -8,11 +9,14 @@ var gains = {}
 var modes = {};
 
 var keyboard = "awsedftgyhujk"; // lowercase input string
-var osctype = "sine";
-modes["1"] = "sine";
-modes["2"] = "square";
-modes["3"] = "sawtooth";
-modes["4"] = "triangle";
+var currmode = "osc-sine";
+
+modes["1"] = "osc-sine";
+modes["2"] = "osc-square";
+modes["3"] = "osc-sawtooth";
+modes["4"] = "osc-triangle";
+modes["8"] = "ks-percussion";
+modes["9"] = "ks-string";
 
 var railsbackbase = Math.pow(2.0, 1.0 / 12.0); // base of function given by railsback curve
 var a440 = 440.0;
@@ -27,6 +31,10 @@ for (var i = 0; i < keyboard.length; i++) { // equal temperament
     freqs[key] = freq;
     active[key] = false;
 }
+
+
+// SETTING UP AUDIO, DRAWING ENVIRONMENTS
+var audiocontext = new AudioContext();
 
 var canvas = document.getElementById("visualization");
 var canvascontext = canvas.getContext("2d");
@@ -65,13 +73,20 @@ function draw() {
 // requestAnimationFrame(draw);
 draw();
 
+
+// FINISHED SETUP
 console.log("mini-midi has launched");
 console.log("valid keys: " + keyboard);
+console.log("volume controlled by mouse y-pos");
 console.log("available modes:");
 for (var key in modes) {
     console.log("[" + key + "] " + modes[key]);
 }
+console.log("WARNING: ks-modes prone to high latency (due to live synth) as well as some unfixed bugs");
 
+
+
+// HANDLE USER INPUT
 document.addEventListener("mousemove", function(event) {
     ypos = 1 - (event.clientY / height);
     // console.log(ypos);
@@ -81,19 +96,28 @@ document.addEventListener("keydown", function(event) {
     var charPressed = String.fromCharCode(event.keyCode || event.which).toLowerCase(); // get lowercase string
     // console.log(charPressed);
     if (charPressed in modes) {
-        // setOscType(modes[charPressed]);
+        // setMode(modes[charPressed]);
         msgMidi(modeToMidi(charPressed, 0));
         return;
-    } else if (!(charPressed in freqs)) {
+    } else if (!(charPressed in keynums)) {
         // console.log("unmapped keydown: " + charPressed);
         return;
-    } else if (active[charPressed] == true) {
-        // console.log("key already active: " + charPressed);
-        return;
     } else {
-    // playTone(audiocontext, freqs[charPressed], 1, 1);
-    // startTone(charPressed, ypos);
-        msgMidi(keydownToMidi(charPressed, ypos, 0));
+        if (currmode.startsWith("osc-")) {
+            if (active[charPressed] == true) {
+                // console.log("key already active: " + charPressed);
+                return;
+            } else {
+                // startTone(charPressed, ypos);
+                msgMidi(keydownToMidi(charPressed, ypos, 0));
+            }
+        } else if (currmode.startsWith("ks-")) {
+            // ksSynth(charPressed, ypos);
+            msgMidi(keydownToMidi(charPressed, ypos, 0));
+        } else {
+            console.log("current mode is invalid (how?)");
+            return;
+        }
     }
 });
 
@@ -103,23 +127,41 @@ document.addEventListener("keyup", function(event) {
     if (charPressed in modes) {
         // don't need to do anything actually
         return;
-    } else if (!(charPressed in freqs)) {
+    } else if (!(charPressed in keynums)) {
         // console.log("unmapped keyup: " + charPressed);
         return;
-    } else if (active[charPressed] == false) {
-        // console.log("key already inactive: " + charPressed);
-        return;
-    } else {
-        // stopTone(charPressed, ypos);
-        msgMidi(keyupToMidi(charPressed, ypos, 0));
+    } else { // want to be able to release key in any mode
+        if (active[charPressed] == false) {
+            // console.log("key already inactive: " + charPressed);
+            return;
+        } else {
+            // stopTone(charPressed, ypos);
+            msgMidi(keyupToMidi(charPressed, ypos, 0));
+        }
     }
 });
 
+
+// JS SYNTHESIZER BACKEND
+function setMode(mode) {
+    var prev = currmode;
+    if (prev == mode) {
+        console.log("mode is already set to [" + mode + "]");
+    } else {
+        currmode = mode;
+        console.log("mode changed from [" + prev + "] to [" + mode + "]");
+    }
+}
+
 function startTone(key, vol) {
+    if (!(currmode.startsWith("osc-"))) {
+        console.log("must be on an oscillator mode");
+        return;
+    }
     console.log("key " + key + " down: " + freqs[key] + " hz / " + vol + " loudness");
     var oscillator = audiocontext.createOscillator();
     var gain = audiocontext.createGain();
-    oscillator.type = osctype;
+    oscillator.type = currmode.slice(4);
     oscillator.frequency.value = freqs[key];
     gain.gain.value = vol;
     oscillator.connect(gain);
@@ -132,6 +174,11 @@ function startTone(key, vol) {
 }
 
 function stopTone(key, vol) {
+    // if (!(currmode.startsWith("osc-"))) {
+    //     console.log("must be on an oscillator mode");
+    //     return;
+    // }
+    // we actually don't want that block so we can release in a different mode
     console.log("key " + key + " up: " + freqs[key] + " hz");
     oscillator = oscillators[key];
     gain = gains[key];
@@ -141,36 +188,97 @@ function stopTone(key, vol) {
     active[key] = false;
 }
 
-function setOscType(mode) {
-    var prev = osctype;
-    if (prev == mode) {
-        console.log("mode is already set to [" + mode + "]");
+function ksSynth(key, vol) {
+    if (!(currmode.startsWith("ks-"))) {
+        console.log("must be on a karplus-strong mode");
+        return;
+    }
+    var freq;
+    var decay;
+    var percussion;
+
+    if (currmode == "ks-percussion") {
+        freq = freqs[key] * Math.pow(railsbackbase, -12.0); // shift freq 1 octave down
+        decay = 1.00; // magic number
+        percussion = true;
+    } else if (currmode = "ks-string") {
+        freq = freqs[key]
+        decay = 0.996;
+        percussion = false;
     } else {
-        osctype = mode;
-        console.log("mode changed from [" + prev + "] to [" + mode + "]");
+        console.log("what? on an invalid mode");
+        return;
+    }
+    var bufptr = 0;
+    var ringbuf = [];
+
+    var sp = audiocontext.createScriptProcessor(4096, 1, 1);
+    sp.connect(analyser);
+    var delaylen = Math.round(audiocontext.sampleRate / freq);
+    var noise = delaylen;
+
+    sp.onaudioprocess = function(event) {
+        var output = event.outputBuffer;
+        var outputdata = output.getChannelData(0);
+        var len = output.length;
+        for (var j = 0; j < len; j++) {
+            outputdata[j] = getData(ringbuf);
+        }
+        // console.log(outputdata);
+    }
+    // sp.connect(audiocontext.destination);
+    function getData(ringbuf) {
+        var sample = 0; // goes to output buffer; ringbuf maintained separately
+        if (noise > 0) {
+            sample = vol * ((2 * Math.random()) - 1);
+            ringbuf[bufptr] = sample;
+            noise -= 1;
+        } else {
+            sample = ringbuf[bufptr];
+            var curr = ringbuf[bufptr];
+            var next = ringbuf[(bufptr + 1) % delaylen];
+            var qval = decay * (curr + next) / 2.0
+            // drum sound
+            if (percussion) {
+                if (Math.random() > 0.5) {
+                    qval = -qval;
+                }
+            }
+            // end drum sound
+            if (Math.abs(qval) < 0.001953125) { // 1/512; arbitrary cutoff
+                qval = 0;
+            }
+            ringbuf[bufptr] = qval;
+        }
+        bufptr = (bufptr + 1) % delaylen;
+        return sample;
     }
 }
 
-function keydownToMidi(key, vol, channel) {
+
+// INPUT-TO-MIDI CONVERSIONS
+function keydownToMidi(key, vol, channel) { // 3byte
     var status = (0b1001 << 4) + channel; // note on; always channel 0 for simplicity
     var data1 = 0b0 + keynums[key] + 60; // 60 defined as middle C
     var data2 = 0b0 + Math.round(127.0*vol);
     return (status << 16) + (data1 << 8) + data2;
 }
 
-function keyupToMidi(key, vol, channel) {
+function keyupToMidi(key, vol, channel) { // 3byte
     var status = (0b1000 << 4) + channel; // note off; always channel 0 for simplicity
     var data1 = 0b0 + keynums[key] + 60; // 60 defined as middle C
     var data2 = 0; // not using velocity for keyup
     return (status << 16) + (data1 << 8) + data2;
 }
 
-function modeToMidi(key, channel) {
+function modeToMidi(key, channel) { // 2byte
     var status = (0b1100 << 4) + channel; // program change
     var data1 = 0b0 + parseInt(key);
     return (status << 8) + data1;
 }
 
+
+// MIDI MESSAGE INTERPRETERS
 function msgMidi(msg) {
     console.log("MIDI MESSAGE: 0b" + msg.toString(2));
     var statusoffset = 0;
@@ -200,17 +308,25 @@ function msgMidi(msg) {
         var keychar = keyboard[keynum]
         var vol = data2;
         // console.log(keychar);
-        startTone(keychar, vol / 127.0);
+        if (currmode.startsWith("osc-")) {
+            startTone(keychar, vol / 127.0);
+        } else if (currmode.startsWith("ks-")) {
+            ksSynth(keychar, vol / 127.0);
+        } else {
+            console.log("not in a mode to handle this command");
+            return;
+        }
     } else if ((status >> 4) == 0b1000) {
         // console.log("keyup");
         var keynum = data1 - 60;
         var keychar = keyboard[keynum]
         var vol = data2;
         // console.log(keychar);
+        // we can definitely call this because keyup only sent if active
         stopTone(keychar, vol / 127.0);
     } else if ((status >> 4) == 0b1100) {
         var preset = data1.toString();
-        setOscType(modes[preset]);
+        setMode(modes[preset]);
     } else {
         console.log("undefined midi message");
         return;
@@ -222,6 +338,64 @@ function msgMidi(msg) {
 
 
 // extras
+// document.addEventListener("mousedown", function(event) {
+//     // var jsNode = audiocontext.createJavaScriptNode(2048,1,1);
+//     // var noises = [];
+//     // var bufferpointers = [];
+//     var sp = audiocontext.createScriptProcessor(4096, 1, 1);
+//     sp.connect(analyser);
+//     var bufptr = 0;
+//     var ringbuf = [];
+//     var freq = freqs["a"];
+//     var decay = 0.996; // magic number
+//     var delaylen = Math.round(audiocontext.sampleRate / freq);
+//     var noise = delaylen;
+
+//     var timeout = 0;
+
+//     sp.onaudioprocess = function(event) {
+//         console.log(event);
+//         var output = event.outputBuffer;
+//         var numchannels = output.numberOfChannels;
+//         // these end up being instantiated already
+//         // since we assume only 1 channel
+//         // for (var i = 0; i < numchannels; i++) {
+//         //     noises[i] = delaylen;
+//         //     bufferpointers[i] = 0;
+//         // }
+//         for (var i = 0; i < numchannels; i++) { // loop through channels
+//             outputdata = output.getChannelData(i);
+//             var len = output.length;
+//             // var ringbuf = []; // can't redefine this in each loop or it restarts
+//             for (var j = 0; j < len; j++) {
+//                 outputdata[j] = getData(i, ringbuf);
+//             }
+//         }
+//         console.log(outputdata);
+//     }
+//     // sp.connect(audiocontext.destination);
+//     function getData(channel, ringbuf) {
+//         var sample = 0;
+//         // var bufptr = bufferpointers[channel];
+//         // if (noises[channel] > 0) {
+//         if (noise > 0) {
+//             sample = (2 * Math.random()) - 1;
+//             ringbuf[bufptr] = sample;
+//             // noises[channel] -= 1;
+//             noise -= 1;
+//         } else {
+//             sample = ringbuf[bufptr];
+//             var curr = ringbuf[bufptr];
+//             var next = ringbuf[(bufptr + 1) % delaylen];
+//             var qval = decay * (curr + next) / 2.0
+//             ringbuf[bufptr] = qval;
+//         }
+//         // bufferpointers[channel] = (bufptr + 1) % delaylen;
+//         bufptr = (bufptr + 1) % delaylen;
+//         return sample;
+//     }
+// });
+
 // var url = "./ce1.ogg";
 // var audiobuffer = null;
 // var request = new XMLHttpRequest();
@@ -249,4 +423,5 @@ function msgMidi(msg) {
 //     oscillator.start(0);
 //     oscillator.stop(context.currentTime + dur);
 // }
+// playTone(audiocontext, freqs[charPressed], 1, 1);
 // end extras
