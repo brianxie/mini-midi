@@ -107,12 +107,14 @@ body {
 
 .blockbutton a:hover{
     color: #ffffff;
-    background-color: #7f7f7f;
+    /*background-color: #7f7f7f;*/
+    background-color: #009fff;
     text-decoration: none;
 }
 
 .blockbutton a:active{
     color: #ffffff;
-    background-color: #7f7f7f;
+    /*background-color: #7f7f7f;*/
+    background-color: #009fff;
     text-decoration: none;
 }

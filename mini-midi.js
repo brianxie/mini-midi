@@ -54,10 +54,12 @@ analyser.getByteTimeDomainData(dataarray);
 function draw() {
     var visual = requestAnimationFrame(draw);
     analyser.getByteTimeDomainData(dataarray);
-    canvascontext.fillStyle = "rgb(31, 31, 31)";
+    // canvascontext.fillStyle = "rgb(31, 31, 31)";
+    canvascontext.fillStyle = "rgb(63, 63, 63)";
     canvascontext.fillRect(0, 0, canvas.width, canvas.height);
     canvascontext.lineWidth = 2;
-    canvascontext.strokeStyle = "rgb(255, 255, 255)";
+    // canvascontext.strokeStyle = "rgb(255, 255, 255)";
+    canvascontext.strokeStyle = "rgb(0, 159, 255)";
     canvascontext.beginPath();
     var slicewidth = canvas.width * 1.0 / bufferlength;
     var x = 0;
