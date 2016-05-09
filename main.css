@@ -1,3 +1,13 @@
+::selection {
+    color: #ffffff;
+    background: #3f3f3f;
+}
+
+::-moz-selection {
+    color: #ffffff;
+    background: #3f3f3f;
+}
+
 body {
     margin-left: 18.75%;
     margin-right: 18.75%;
@@ -5,22 +15,44 @@ body {
     background-color: #ffffff;
     font-family: 'Lato', sans-serif;
     font-size: 1.25em;
+    font-weight: normal;
     line-height: 1.5;
+}
+
+.right-just {
+    text-align: right;
 }
 
 #title {
     text-align: center;
     font-size: 3em;
+    font-weight: bold;
     line-height: 1.25;
+}
+
+.subhead {
+    text-align: left;
+    font-size: 1.5em;
+    font-weight: bold;
+    line-height: 2;
+}
+
+.block {
+    text-align: center;
+    font-size: 1.375em;
+    font-style: italic;
+    margin-left: 18.75%;
+    margin-right: 18.75%;
 }
 
 #wrapper {
     width: 640px;
-    height: 720px;
-    margin: 0 auto;
+    height: 800px;
+    margin: auto;
     font-family: "Roboto Mono";
     font-size: 12px;
 }
+
 .scrollbox-midi {
     width: 320px;
     height: 240px;
