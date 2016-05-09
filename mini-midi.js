@@ -1,5 +1,6 @@
 // this looks really inelegant because midi contains an internal state machine :V
 
+
 // DEFINING GLOBAL VARS
 var freqs = {};
 var keynums = {};
@@ -72,6 +73,10 @@ function draw() {
 }
 // requestAnimationFrame(draw);
 draw();
+
+var perpetual = audiocontext.createScriptProcessor(4096, 1, 1);
+perpetual.connect(analyser);
+
 
 
 // FINISHED SETUP
@@ -212,12 +217,19 @@ function ksSynth(key, vol) {
     var bufptr = 0;
     var ringbuf = [];
 
+    console.log("key " + key + " down: " + freq + " hz / " + vol + " loudness");
+
     var sp = audiocontext.createScriptProcessor(4096, 1, 1);
     sp.connect(analyser);
     var delaylen = Math.round(audiocontext.sampleRate / freq);
     var noise = delaylen;
 
+    var empty = false;
     sp.onaudioprocess = function(event) {
+        if (empty) {
+            sp.disconnect();
+            return;
+        }
         var output = event.outputBuffer;
         var outputdata = output.getChannelData(0);
         var len = output.length;
@@ -225,7 +237,15 @@ function ksSynth(key, vol) {
             outputdata[j] = getData(ringbuf);
         }
         // console.log(outputdata);
+        empty = true;
+        for (var k = 0; k < len; k++) {
+            if (outputdata[k] != 0.0) {
+                empty = false;
+                break;
+            }
+        }
     }
+
     // sp.connect(audiocontext.destination);
     function getData(ringbuf) {
         var sample = 0; // goes to output buffer; ringbuf maintained separately
@@ -425,3 +445,6 @@ function msgMidi(msg) {
 // }
 // playTone(audiocontext, freqs[charPressed], 1, 1);
 // end extras
+
+// dsp on input samples?
+// changing waveform envelope?
