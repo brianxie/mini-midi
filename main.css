@@ -17,6 +17,7 @@ body {
     font-size: 1.25em;
     font-weight: normal;
     line-height: 1.5;
+    text-align: left;
 }
 
 .right-just {
@@ -24,25 +25,24 @@ body {
 }
 
 #title {
-    text-align: center;
     font-size: 3em;
     font-weight: bold;
     line-height: 1.25;
+    text-align: center;
 }
 
 .subhead {
-    text-align: left;
     font-size: 1.5em;
-    font-weight: bold;
+    /*font-weight: bold;*/
     line-height: 2;
 }
 
 .block {
-    text-align: center;
-    font-size: 1.375em;
-    font-style: italic;
     margin-left: 18.75%;
     margin-right: 18.75%;
+    /*font-size: 1.375em;*/
+    font-style: italic;
+    text-align: center;
 }
 
 #wrapper {
