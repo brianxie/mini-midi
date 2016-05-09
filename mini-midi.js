@@ -54,7 +54,7 @@ analyser.getByteTimeDomainData(dataarray);
 function draw() {
     var visual = requestAnimationFrame(draw);
     analyser.getByteTimeDomainData(dataarray);
-    canvascontext.fillStyle = "rgb(15, 15, 15)";
+    canvascontext.fillStyle = "rgb(31, 31, 31)";
     canvascontext.fillRect(0, 0, canvas.width, canvas.height);
     canvascontext.lineWidth = 2;
     canvascontext.strokeStyle = "rgb(255, 255, 255)";
