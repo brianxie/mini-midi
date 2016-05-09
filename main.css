@@ -32,6 +32,7 @@ body {
     font-weight: bold;
     line-height: 1.25;
     text-align: center;
+    color: #009fff;
 }
 
 .subhead {
@@ -39,6 +40,7 @@ body {
     /*font-weight: bold;*/
     line-height: 2;
     /*text-decoration: underline;*/
+    color: #009fff;
 }
 
 .block {
