@@ -115,6 +115,15 @@ rightconsole.scrollTop = rightconsole.scrollHeight;
 
 
 // HANDLE USER INPUT
+window.addEventListener("resize", function(event) {
+    // console.log(event);
+    // console.log(event.currentTarget.innerHeight);
+    // console.log(event.srcElement.innerHeight);
+    // console.log(event.target.innerHeight);
+    height = window.innerHeight;
+    console.log("height changed to " + height);
+});
+
 document.addEventListener("mousemove", function(event) {
     ypos = 1 - (event.clientY / height);
     // console.log(ypos);
