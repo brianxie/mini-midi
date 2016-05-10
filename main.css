@@ -23,6 +23,13 @@ body {
     padding: 0px;
 }
 
+hr {
+    width: 50%;
+    color: #009fff;
+    border-color: #009fff;
+    background-color: #009fff;
+}
+
 .right-just {
     text-align: right;
 }
@@ -32,7 +39,7 @@ body {
     font-weight: bold;
     line-height: 1.25;
     text-align: center;
-    color: #009fff;
+    /*color: #009fff;*/
 }
 
 .subhead {
