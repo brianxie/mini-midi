@@ -1,5 +1,5 @@
 // this looks really inelegant because midi contains an internal state machine :V
-
+// control change messages are NOT LOGGED (intentionally) but they are happening
 
 // DEFINING GLOBAL VARS
 leftconsole = document.getElementById("console-midi");
@@ -118,6 +118,8 @@ rightconsole.scrollTop = rightconsole.scrollHeight;
 document.addEventListener("mousemove", function(event) {
     ypos = 1 - (event.clientY / height);
     // console.log(ypos);
+    // changeChannelVolume(ypos);
+    msgMidi(changeVolumeToMidi(ypos, 0));
 });
 
 document.addEventListener("keydown", function(event) {
@@ -186,6 +188,19 @@ function setMode(mode) {
         rightconsole.innerHTML += "[" + prev + "] to [" + mode + "]" + "<br>";
         rightconsole.scrollTop = rightconsole.scrollHeight;
 
+    }
+}
+
+function changeChannelVolume(vol) {
+    // console.log("volume set to " + vol);
+
+    // rightconsole.innerHTML += "[volume] set to " + Math.round(100*vol) + "%" + "<br>";
+    // rightconsole.scrollTop = rightconsole.scrollHeight;
+
+    for (node in active) {
+        if (active[node]) {
+            gains[node].gain.value = vol;
+        }
     }
 }
 
@@ -334,6 +349,15 @@ function keyupToMidi(key, vol, channel) { // 3byte
     return (status << 16) + (data1 << 8) + data2;
 }
 
+function changeVolumeToMidi(vol, channel) { // 3byte
+    // 1011cccc 0nnnnnnn 0vvvvvvv
+    // controlchange volumelev controllernum value
+    var status = (0b1011 << 4) + channel; // controller change to channel <channel>
+    var data1 = 0b0 + 7; // controller number, maps to <volume level> command
+    var data2 = 0b0 + Math.round(127.0 * vol);
+    return (status << 16) + (data1 << 8) + data2;
+}
+
 function modeToMidi(key, channel) { // 2byte
     var status = (0b1100 << 4) + channel; // program change
     var data1 = 0b0 + parseInt(key);
@@ -343,17 +367,19 @@ function modeToMidi(key, channel) { // 2byte
 
 // MIDI MESSAGE INTERPRETERS
 function msgMidi(msg) {
-    console.log("MIDI MESSAGE: 0b" + msg.toString(2));
+    if ((msg >>> 20) != 0b1011) { // don't provide output for control change (too many)
+        console.log("MIDI MESSAGE: 0b" + msg.toString(2));
 
-    leftconsole.innerHTML += msg.toString(2) + "<br>";
-    leftconsole.scrollTop = leftconsole.scrollHeight;
+        leftconsole.innerHTML += msg.toString(2) + "<br>";
+        leftconsole.scrollTop = leftconsole.scrollHeight;
+    }
 
     var statusoffset = 0;
     var dataoffset = 0
     var data2 = 0;
     // making some assumptions that the message sender is standards-conformant
     // otherwise, behaviour is undefined
-    if ((msg >>> 23) == 1) { // 3 bytes
+    if ((msg >>> 23) == 1) { // 3 bytes; finds status bytes, which always start with 1
         // console.log("3 bytes");
         statusoffset = 16;
         dataoffset = 8;
@@ -369,7 +395,7 @@ function msgMidi(msg) {
 
     var data1 = (msg >>> (dataoffset)) & 0b11111111;
     var status = (msg >>> (statusoffset)) & 0b11111111;
-    if ((status >> 4) == 0b1001) {
+    if ((status >> 4) == 0b1001) { // note on
         // console.log("keydown");
         var keynum = data1 - 60;
         var keychar = keyboard[keynum]
@@ -383,7 +409,7 @@ function msgMidi(msg) {
             console.log("not in a mode to handle this command");
             return;
         }
-    } else if ((status >> 4) == 0b1000) {
+    } else if ((status >> 4) == 0b1000) { // note off
         // console.log("keyup");
         var keynum = data1 - 60;
         var keychar = keyboard[keynum]
@@ -391,9 +417,12 @@ function msgMidi(msg) {
         // console.log(keychar);
         // we can definitely call this because keyup only sent if active
         stopTone(keychar, vol / 127.0);
-    } else if ((status >> 4) == 0b1100) {
+    } else if ((status >> 4) == 0b1100) { // program change
         var preset = data1.toString();
         setMode(modes[preset]);
+    } else if ((status >> 4) == 0b1011) { // control change
+        var vol = data2;
+        changeChannelVolume(vol / 127.0);
     } else {
         console.log("undefined midi message");
         return;
