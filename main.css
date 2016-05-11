@@ -34,7 +34,7 @@ hr {
     text-align: right;
 }
 
-#title {
+.big {
     font-size: 3em;
     font-weight: bold;
     line-height: 1.25;

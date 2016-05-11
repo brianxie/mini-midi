@@ -10,7 +10,7 @@
     <body>
         <br>
         <br>
-        <div id="title">DIVING INTO MIDI<br></div>
+        <div class="big">DIVING INTO MIDI<br></div>
         <br>
 
         <hr noshade><br>
@@ -18,21 +18,21 @@
 <!--         <div class="subhead">The first subheader<br></div>
         <br>
  -->
-        Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam sagittis egestas justo, in imperdiet ligula mattis et. Donec lacinia, mi at porttitor interdum, augue magna egestas ligula, vitae lacinia nibh sapien et eros. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Praesent ac lacinia lacus. Vivamus nec orci lacus. Pellentesque efficitur elit in pharetra convallis. Ut aliquet luctus varius. Nulla facilisi.<br>
+        Having had no prior experience with MIDI, and tasked with completing a project on the subject, I decided that the best way to gain familiarity was to do some programming. This is a quick demo of an application which produces MIDI output and interprets MIDI input to generate sound, and provides a visualization of the resulting waveform.<br>
         <br>
-        This line contains more content. It is only one line long.<br>
+        This was made as part of a final project for Berkeley's Music 128, Spring 2016, with Professor Deirdre Loughridge.<br>
         <br>
-        I am trying to follow some reasonable pattern of break-in, break-out.<br>
+        <div class="subhead">Design<br></div>
         <br>
-        For some reason indentation looks stupid on the web, so I'm going to skip it. That being said, "&amp;emsp;" supposedly adds a 1-em space.<br>
+        I wanted the entire application to run in the browser end-to-end with no external dependencies (software or hardware; I don't have access to a MIDI keyboard). Note that had I just wanted to design a synthesizer, MIDI would have been entirely unnecessary; as it is, this application doesn't rely on MIDI. It takes user input (using javascript event listeners), converts them into MIDI messages, and then passes the message as an argument to another javascript function which decodes the message and calls yet another javascript function to produce the appropriate output. The application will still function if you remove the MIDI encoding/decoding step and simply call the javascript functions directly. However, the advantage of having a MIDI translator in the code is that it would theoretically be possible for this application to work with a MIDI controller (as long as the MIDI data could properly be passed to the application, which is something I did not implement).<br>
         <br>
-        <div class="subhead">This is a subheader<br></div>
+        <div class="subhead">Implementation<br></div>
         <br>
-        Cras convallis, nisi a dignissim porttitor, nunc nisl congue massa, quis imperdiet mauris nunc sit amet nulla. Nulla finibus nibh a lorem ornare, porta ornare justo placerat. Praesent vulputate ullamcorper volutpat. Vivamus non magna vel nulla lobortis interdum. Nunc eu vulputate arcu, tempus efficitur neque. Integer aliquet ornare mauris, ut iaculis quam. Ut aliquam tempor odio, nec hendrerit nunc tempor condimentum. Donec hendrerit non tortor vel congue. Ut aliquet felis at nulla malesuada, eu lacinia nibh hendrerit. Nulla arcu orci, scelerisque et nunc sit amet, pharetra blandit dolor.<br>
+        The entire application is written in javascript. Since MIDI is just a standard for sending and receiving messages, it would be fairly bland without an actual audio source or synthesizer to interpret the messages and produce sound. I used the webaudio api's oscillators (which just produce several basic waveforms) as the main synthesis backend. I also implemented a Karplus-Strong string and percussion synthesizer (though admittedly the percussion sounds terrible). Note that since Karplus-Strong synthesis is more computationally intensive and generated live, there is a noticeable latency between user input and audio output. Even though MIDI itself is a compact protocol, its performance is ultimately limited by the abilities of the synthesizer it utilizes.<br>
         <br>
-        Morbi molestie tempor orci nec sollicitudin. Quisque nec augue non nibh venenatis rutrum quis et mauris. Nunc dolor risus, sodales ac libero non, mollis convallis nibh. Duis viverra risus augue, quis pharetra arcu iaculis nec. Quisque laoreet sodales odio ac euismod. Quisque non ligula eu erat pharetra convallis. Praesent id finibus sem, non consequat felis. Duis dignissim, dui id dictum faucibus, dolor neque scelerisque erat, et tristique justo nibh in nisl. Donec et nibh nisi. Phasellus metus diam, pretium et consectetur ac, volutpat sed dui. Vivamus euismod id ex sed sodales. Praesent augue lorem, rutrum a sagittis eu, sollicitudin sed tortor. Interdum et malesuada fames ac ante ipsum primis in faucibus.<br>
+        The keyboard is tuned to equal-temperament using values along the Railsback curve. Notice that this was a choice made independently of the MIDI messages; that is, the MIDI data does not specify how the produced output should sound. This is because MIDI only transmits gestural and input data, leaving it to the synthesizer to decide how it should be interpreted.<br>
         <br>
-        Sed in quam lorem. Duis augue neque, maximus sed urna et, faucibus eleifend diam. Nam nulla tortor, rutrum ac lorem egestas, ornare rutrum enim. Donec nec elit ac orci lacinia tincidunt nec non mauris. Quisque volutpat luctus neque eu mattis. Curabitur blandit aliquet eros eu condimentum. Pellentesque nec cursus tellus, nec dictum mi. Maecenas placerat suscipit felis nec iaculis. Sed ac tellus non massa fermentum porttitor. Integer fermentum libero et felis auctor rhoncus. Aliquam malesuada enim id quam ullamcorper rhoncus. Suspendisse turpis est, aliquet eget magna vel, tempus viverra neque.<br>
+        The MIDI standard specifies a large number of commands. The primitive audio synthesizers I used for this project are not terribly powerful, and I don't have enough of an understanding of signal processing to properly produce the effects of many of the MIDI messages. I therefore only implemented some basic commands: note on, note off, program change, and control (volume) change.<br>
         <br>
         <div id="wrapper">
             <br>
@@ -41,7 +41,7 @@
             <div id="console-js" class="scrollbox-js"></div>
             <script src="mini-midi.js"></script><br>
             <br>
-            Flavor text. This is a description of the javascript application. It does things that are very interesting. It is very, very, very interesting.<br>
+            Demo MIDI synthesizer controlled with keyboard and mouse. Supports note on, note off, program change, control change; 4 oscillator programs and 2 Karplus-Strong synthesized programs. Output regarding volume is suppressed.<br>
             <br>
 
             <div class="blockbutton" title="View source on GitHub">
@@ -51,22 +51,34 @@
 
         </div><br>
         <br>
-        As you can see, we were able to handle the breaks gracefully and the spacing appears to be fine.<br>
+        You can use your keyboard as a mock MIDI controller, since the application translates key commands into MIDI commands. The output volume corresponds to the vertical position of your mouse in the window (somewhat like a theremin). For the oscillators, the note will be held as long as the key is pressed down; the Karplus-Strong synthesizers don't support sustained notes, since they are designed to emulate string plucking.<br>
         <br>
-        Nullam accumsan tortor id felis posuere, ac blandit nisi semper. Donec purus est, cursus sed lobortis in, cursus vel magna. Maecenas mauris enim, eleifend nec ante accumsan, molestie porta ligula. Donec nec arcu consectetur, egestas lacus sit amet, posuere quam. Pellentesque tincidunt urna eget purus tincidunt, sit amet egestas dolor ultricies. Nulla non justo ut velit pharetra vehicula vestibulum at ipsum. Vivamus a imperdiet diam. Donec a gravida mauris, quis luctus ligula. Sed sed ante purus. Nullam orci erat, ultrices vitae aliquet quis, finibus vitae ante. Morbi maximus placerat ipsum eget commodo. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos.<br>
+        The application also produces some output; in the left box, you can see the MIDI message that was generated from your input. On the right, you can see a more human-readable description of what the synthesizer is doing. By default, all messages are shown except for volume change messages; these are generated each time your mouse moves, so printing these would result in lots of useless output, but they are happening in the background.<br>
         <br>
-        <div class="subhead">The next point<br></div>
+        <div class="subhead">Remarks<br></div>
         <br>
-        Vivamus rutrum nisl nec quam pharetra iaculis. Phasellus suscipit bibendum erat, a tristique orci condimentum vel. Cras ac dolor faucibus, molestie diam eget, maximus quam. Cras rutrum turpis in velit eleifend, eget accumsan nisl tempus. Maecenas feugiat justo at finibus egestas. Nullam auctor metus fermentum, laoreet nibh vel, varius leo. Donec euismod vel libero sed pharetra. Quisque ac eleifend odio. Sed at libero sed ex auctor venenatis. Integer vehicula sit amet ante efficitur suscipit. Vivamus rutrum nisl ut nibh dignissim eleifend. Vivamus vulputate libero ut diam auctor, nec facilisis nibh tristique. Praesent lobortis dui sit amet mauris accumsan, a consequat ante elementum.<br>
+        MIDI presents a surprisingly simple interface. The messages are clear and concise, so they are easy to reason about and parse, and the messages map quite naturally to basic musical commands. I can see how it would be difficult to encode more complex and nuanced information with MIDI, but I imagine that that is a result of the intrinsic difficulty of precisely describing audio events and not the fault of MIDI itself.<br>
         <br>
-        <div class="block">"This is a moderately long quote that has no purpose other than to test the behaviour of my stylesheets. There is nothing important to be said here; I simply ran out of random lorem ipsum text, so the remainder of this block will be manually typed. The formatting will look identical regardless of how this text is filled out."<br></div>
+        MIDI also opens up options for programmatic composing (which is an avenue that I chose not to explore). By recording MIDI messages (binary data) rather than actual sounds, one could compose a score, and easily make changes wherever necessary. For example, changing pitches or volumes would be equivalent to changing no more than 7 bits per note. While this paradigm may make it difficult to create extremely detailed or expressive audio, it excels at manipulating simple parameters.<br>
         <br>
-        In pulvinar interdum elit sit amet dignissim. Integer nec urna fringilla, interdum nulla in, dapibus magna. Praesent lacinia, nulla eget ultrices volutpat, neque purus maximus neque, sit amet tempus orci massa sed libero. Aliquam sagittis mi a mi semper, sit amet faucibus ex laoreet. Proin pretium neque in ipsum euismod varius. Fusce in lectus et est tincidunt lacinia ac et nibh. Donec sollicitudin orci non molestie varius. Praesent semper metus ut eros ultrices, ut faucibus elit luctus. Fusce eu luctus quam, sed bibendum leo.<br>
+
+        <hr noshade><br>
+
+        <div class="big">References<br></div>
         <br>
-        Yes, the page actually just ends like this. There's no header or footer because it probably isn't worth my time to include one. Besides, this page might be loading enough resources already. I did my best to clean up the javascript, but it's probably quite heavy by nature.<br>
+
+        https://www.w3.org/TR/webaudio/<br>
+        https://www.cs.cmu.edu/~music/cmsip/readings/MIDI%20tutorial%20for%20programmers.html<br>
+        http://en.wikiaudio.org/MIDI:Channel_messages_tutorial<br>
+        https://www.midi.org/specifications/item/table-1-summary-of-midi-message<br>
+        https://en.wikipedia.org/wiki/Piano_acoustics#The_Railsback_curve<br>
         <br>
-        Thanks.<br>
-        <br>
+
+
         <br>
     </body>
 </html>
+
+<!--         <div class="block">"If I had a quote, I would put it here."<br></div>
+        <br>
+ -->
